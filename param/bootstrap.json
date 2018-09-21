@@ -1,0 +1,10 @@
+{
+  "title": "Olá Mundo",
+  "js": [
+    "bootstrap"
+  ],
+  "css": [
+    "bootstrap"
+  ],
+  "font": ["https://use.fontawesome.com/releases/v5.3.1/css/all.css"]
+}

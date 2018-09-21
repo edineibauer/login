@@ -1,0 +1,14 @@
+{
+  "login": {
+    "1": "Faça Logout primeiro",
+    "2": "Informe Usuário e Senha",
+    "3": "Muitas Tentativas inválidas, tente novamente em 15 minutos!",
+    "4": "Senha inválida",
+    "5": "Usuário não encontrado",
+    "6": "Chave do Site necessária",
+    "7": "Você não tem cadastro nesse site",
+    "8": "Conta Desativada",
+    "9": "Captcha não Aprovado",
+    "10": "Email inválido"
+  }
+}
