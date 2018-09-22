@@ -2,10 +2,12 @@
 
 use Store\ElasticSearch;
 use Store\Store;
+use \Helper\Convert;
+use \Helper\Validate;
 
 class Login
 {
-    private static $loginTable = 'user';
+    private static $loginTable;
 
     /**
      * Acessa o sistema com credenciais de login
@@ -15,20 +17,22 @@ class Login
      */
     public static function Access(array $data)
     {
-        if (isset($_SESSION['userlogin'])) {
-            return 1;
-        } else {
-            if (!empty($data['email']) && !empty($data['password']) && !self::attemptExceded()) {
-                if (self::isHuman())
-                    return self::checkCredenciais($data);
-                else
-                    return 9;
-            } elseif (!empty($data['user']) && !empty($data['password'])) {
-                return 3;
-            } else {
-                return 2;
-            }
-        }
+        if (empty($data['key']))
+            return 6;
+        elseif (empty($data['email']))
+            return 2;
+        elseif (empty($data['password']))
+            return 3;
+        elseif (self::attemptExceded())
+            return 11;
+        elseif (!self::isHuman())
+            return 9;
+        elseif (!Validate::email($data['email']))
+            return 10;
+
+        self::$loginTable = $data['key'] === "fc87b14b506da600b4a080360e269518" ? "webmaster" : "user";
+
+        return self::checkCredenciais($data);
     }
 
     /**
@@ -40,33 +44,20 @@ class Login
     private static function checkCredenciais(array $data)
     {
         $store = new ElasticSearch(self::$loginTable);
-        if(\Helper\Validate::email($data['email'])) {
-            $store->sqlAnd(["email" => $data['email'], "password" => \Helper\Convert::password($data['password'])]);
-            if ($store->getCount() > 0) {
-                if (!empty($data['key'])) {
-                    $ua = new ElasticSearch(self::$loginTable . "_access");
-                    if($user = $ua->getResult(md5($store->getResult()['id'].$data['key']))) {
-                        if ($user['status'] === 1) {
-                            $token = self::getToken($user['id'].$data['key'], !empty($data['remind']) ? 12 : 1);
-                            $uaCrud = new Store(self::$loginTable . "_access");
-                            $uaCrud->update($user['id'], ["token" => $token]);
-                            return ["token" => $token, "setor" => $user['setor'], "nivel" => $user['nivel']];
-                        } else {
-                            return 8;
-                        }
-                    } else {
-                        return 7;
-                    }
-                } else {
-                    return 6;
-                }
-            } else {
-                $store = new ElasticSearch(self::$loginTable);
-                $store->sqlAnd(["email" => $data['email']]);
-                return ($store->getCount() > 0 ? 4 : 5);
-            }
+        $id = md5($data['email'] . Convert::password($data['password']));
+        if ($usuario = $store->getResult($id)) {
+            $ua = new ElasticSearch(self::$loginTable . "-access");
+            if (!$user = $ua->getResult(md5($id . $data['key'])))
+                return 7;
+
+            if ($user['status'] !== 1)
+                return 8;
+
+            return $id;
         } else {
-            return 10;
+            $store = new ElasticSearch(self::$loginTable);
+            $store->sqlAnd(["email" => $data['email']]);
+            return ($store->getCount() > 0 ? 4 : 5);
         }
     }
 
@@ -116,18 +107,18 @@ class Login
      */
     private static function isHuman()
     {
-       /* if (defined("RECAPTCHA")) {
-            if (empty($this->recaptcha))
-                $this->setResult("resolva o captcha");
+        /* if (defined("RECAPTCHA")) {
+             if (empty($this->recaptcha))
+                 $this->setResult("resolva o captcha");
 
-            $recaptcha = new ReCaptcha(RECAPTCHA);
-            $resp = $recaptcha->verify($this->recaptcha, filter_var(Helper::getIP(), FILTER_VALIDATE_IP));
-            if (!$resp->isSuccess())
-                $this->setResult('<p>' . implode('</p><p>', $resp->getErrorCodes()) . '</p>');
-        }
+             $recaptcha = new ReCaptcha(RECAPTCHA);
+             $resp = $recaptcha->verify($this->recaptcha, filter_var(Helper::getIP(), FILTER_VALIDATE_IP));
+             if (!$resp->isSuccess())
+                 $this->setResult('<p>' . implode('</p><p>', $resp->getErrorCodes()) . '</p>');
+         }
 
-        return $this->getResult() ? false : true;*/
-       return true;
+         return $this->getResult() ? false : true;*/
+        return true;
     }
 
     /**
