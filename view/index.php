@@ -7,7 +7,7 @@
                 <h5 class="header col s12 light">Sistema Centralizado de Acesso a Sistemas. De desenvolvedor para desenvolvedor</h5>
             </div>
             <div class="row center">
-                <a href="login" id="download-button"
+                <a href="<?=HOME?>cadastrar" id="download-button"
                    class="btn-large waves-effect waves-light blue lighten-1">Inciar Testes</a>
             </div>
             <br><br>
