@@ -17,14 +17,32 @@ class Login
      */
     public static function Access(array $data)
     {
-        if (empty($data['key']))
+        $id = self::checkAccess($data);
+        if(is_int($id) && $id !== 11) {
+            $store = new Store(self::$loginTable . "-attempt", false, false);
+            $store->add([
+                "email" => $data['email'],
+                "password" => $data['password'],
+                "key" => $data['key'],
+                "ip" => filter_var(\Helper\Helper::getIP(), FILTER_VALIDATE_IP),
+                "error" => $id,
+                "data" => strtotime("now")
+            ]);
+        }
+
+        return $id;
+    }
+
+    private static function checkAccess(array $data)
+    {
+        if (self::attemptExceded($data))
+            return 11;
+        elseif (empty($data['key']))
             return 6;
         elseif (empty($data['email']))
             return 2;
         elseif (empty($data['password']))
             return 3;
-        elseif (self::attemptExceded())
-            return 11;
         elseif (!self::isHuman())
             return 9;
         elseif (!Validate::email($data['email']))
@@ -91,12 +109,15 @@ class Login
     /**
      * Verifica se houve tentativas falhas demais nos últimos instantes
      *
+     * @param array $data
      * @return bool
      */
-    private static function attemptExceded()
+    private static function attemptExceded(array $data): bool
     {
-//        $ip = filter_var(\Helper\Helper::getIP(), FILTER_VALIDATE_IP);
-        return false;
+        $time = strtotime("-30 minutes", strtotime("now"));
+        $search = new ElasticSearch(self::$loginTable . "-attempt");
+        $search->setLimit(16)->columnIquals("email", $data['email'])->columnGreaterThan("data", $time);
+        return ($search->getCount() > 15);
     }
 
     /**
