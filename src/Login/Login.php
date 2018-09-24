@@ -33,8 +33,14 @@ class Login
         return $id;
     }
 
+    /**
+     * @param array $data
+     * @return int|mixed
+     */
     private static function checkAccess(array $data)
     {
+        self::$loginTable = $data['key'] === "fc87b14b506da600b4a080360e269518" ? "webmaster" : "user";
+
         if (self::attemptExceded($data))
             return 11;
         elseif (empty($data['key']))
@@ -47,8 +53,6 @@ class Login
             return 9;
         elseif (!Validate::email($data['email']))
             return 10;
-
-        self::$loginTable = $data['key'] === "fc87b14b506da600b4a080360e269518" ? "webmaster" : "user";
 
         return self::checkCredenciais($data);
     }
@@ -140,18 +144,5 @@ class Login
 
          return $this->getResult() ? false : true;*/
         return true;
-    }
-
-    /**
-     * Gera token com data de validade
-     *
-     * @param string $id
-     * @param int $validMonth
-     * @return string
-     */
-    private static function getToken(string $id, int $validMonth = 1): string
-    {
-        $date = date("Y-m-d H:i:s", strtotime("+{$validMonth} month", strtotime(date("Y-m-d H:i:s"))));
-        return md5($id) . "#" . base64_encode($date);
     }
 }
